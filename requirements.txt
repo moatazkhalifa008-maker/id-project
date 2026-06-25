@@ -1,3 +1,5 @@
 kivy
 pillow
 plyer
+arabic-reshaper
+python-bidi
