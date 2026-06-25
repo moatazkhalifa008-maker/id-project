@@ -42,7 +42,11 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y             git zip unzip openjdk-17-jdk python3-pip python3-virtualenv             autoconf automake autopoint libtool pkg-config gettext             zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6             cmake libffi-dev libssl-dev ccache
+          sudo apt-get install -y \
+            git zip unzip openjdk-17-jdk python3-pip python3-virtualenv \
+            autoconf automake autopoint libtool pkg-config gettext \
+            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 \
+            cmake libffi-dev libssl-dev ccache
 
       - name: Install Python build tools
         run: |
@@ -71,7 +75,18 @@ jobs:
 
       - name: Build debug APK
         run: |
-          buildozer -v android debug
+          buildozer -v android debug 2>&1 | tee buildozer.log
+
+      - name: Debug output folders
+        if: always()
+        run: |
+          echo "PWD=$(pwd)"
+          echo "===== bin ====="
+          ls -lah bin || true
+          echo "===== find apk ====="
+          find . -type f $$ -name "*.apk" -o -name "*.aab" $$ | sort || true
+          echo "===== buildozer dist dirs ====="
+          find .buildozer -maxdepth 8 -type d | sort | tail -200 || true
 
       - name: Upload APK artifact
         if: always()
@@ -80,15 +95,15 @@ jobs:
           name: apk
           path: |
             bin/*.apk
-            ./.buildozer/android/platform/build-*/dists/*/*.apk
-          if-no-files-found: warn
+            bin/*.aab
+          if-no-files-found: error
 
-      - name: Upload logs and build state on failure
+      - name: Upload build logs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: build-logs
           path: |
-            .buildozer/
-            *.log
+            buildozer.log
+            .buildozer/**
           if-no-files-found: warn
