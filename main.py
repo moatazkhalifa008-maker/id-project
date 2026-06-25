@@ -15,10 +15,11 @@ from kivy.uix.popup import Popup
 from kivy.uix.screenmanager import ScreenManager, Screen
 
 from app.storage.database import Database
-from app.services.ocr_service import OCRService, OCRResult
+from app.services.ocr_service import OCRService
 from app.services.export_service import export_csv
 from app.services.camera_service import ensure_camera_permissions, get_default_capture_dir, take_picture
 from app.utils.arabic_normalizer import normalize_arabic
+from app.utils.rtl import rtl_text
 
 APP_TITLE = 'id check'
 DEFAULT_FONT = 'assets/fonts/Cairo-Regular.ttf'
@@ -41,15 +42,17 @@ KV = r'''
     text_size: self.width, None
     halign: 'right'
     valign: 'middle'
+    size_hint_y: None
+    height: dp(26)
 
-<ReadonlyField@TextInput>:
-    readonly: True
-    multiline: False
+<ReadonlyField@Label>:
     font_name: app.font_path if app.font_exists else 'Roboto'
+    text_size: self.width, None
     halign: 'right'
+    valign: 'middle'
     size_hint_y: None
     height: dp(42)
-    write_tab: False
+    color: (.1, .1, .1, 1)
 
 <MainMenuScreen>:
     name: 'menu'
@@ -58,7 +61,7 @@ KV = r'''
         padding: dp(16)
         spacing: dp(12)
         Label:
-            text: 'id check'
+            text: app.rtl('id check')
             font_name: app.font_path if app.font_exists else 'Roboto'
             bold: True
             font_size: '28sp'
@@ -66,7 +69,7 @@ KV = r'''
             height: dp(50)
             color: (.05,.05,.05,1)
         Label:
-            text: 'تطبيق أوفلاين لحفظ صور وبيانات بطاقات الهوية المصرية'
+            text: app.rtl('تطبيق أوفلاين لحفظ صور وبيانات بطاقات الهوية المصرية')
             font_name: app.font_path if app.font_exists else 'Roboto'
             text_size: self.width, None
             halign: 'right'
@@ -75,27 +78,27 @@ KV = r'''
             height: dp(50)
             color: (.2,.2,.2,1)
         PrimaryButton:
-            text: 'التقاط بطاقة جديدة بالكاميرا'
+            text: app.rtl('التقاط بطاقة جديدة بالكاميرا')
             on_release: root.capture_with_camera()
         PrimaryButton:
-            text: 'استيراد صورة بطاقة من مسار موجود'
+            text: app.rtl('استيراد صورة بطاقة من مسار موجود')
             on_release: root.import_existing_image()
         PrimaryButton:
-            text: 'البحث بالاسم'
+            text: app.rtl('البحث بالاسم')
             on_release: app.root.current = 'search'
         PrimaryButton:
-            text: 'عرض آخر السجلات'
+            text: app.rtl('عرض آخر السجلات')
             on_release: app.root.get_screen('records').refresh_records(); app.root.current = 'records'
         PrimaryButton:
-            text: 'تصدير CSV'
+            text: app.rtl('تصدير CSV')
             on_release: app.root.current = 'export'
         Label:
-            text: root.status_message
+            text: app.rtl(root.status_message)
             font_name: app.font_path if app.font_exists else 'Roboto'
             text_size: self.width, None
             halign: 'right'
             size_hint_y: None
-            height: dp(52)
+            height: dp(60)
             color: (.15,.15,.15,1)
         Widget:
 
@@ -111,22 +114,22 @@ KV = r'''
             spacing: dp(8)
             PrimaryButton:
                 size_hint_x: .28
-                text: 'رجوع'
+                text: app.rtl('رجوع')
                 on_release: app.root.current = 'menu'
             TextInput:
                 id: q
                 multiline: False
-                hint_text: 'ابحث بالاسم...'
+                hint_text: app.rtl('ابحث بالاسم...')
                 font_name: app.font_path if app.font_exists else 'Roboto'
                 halign: 'right'
                 write_tab: False
             PrimaryButton:
                 size_hint_x: .28
-                text: 'بحث'
+                text: app.rtl('بحث')
                 on_release: root.do_search(q.text)
         Label:
             id: status
-            text: 'اكتب جزءًا من الاسم ثم اضغط بحث'
+            text: app.rtl('اكتب جزءًا من الاسم ثم اضغط بحث')
             font_name: app.font_path if app.font_exists else 'Roboto'
             text_size: self.width, None
             halign: 'right'
@@ -151,7 +154,7 @@ KV = r'''
         padding: dp(16)
         spacing: dp(10)
         Label:
-            text: 'مراجعة البيانات المستخرجة'
+            text: app.rtl('مراجعة البيانات المستخرجة')
             font_name: app.font_path if app.font_exists else 'Roboto'
             font_size: '22sp'
             size_hint_y: None
@@ -168,27 +171,27 @@ KV = r'''
             size_hint_y: None
             height: self.minimum_height
             SectionLabel:
-                text: 'الاسم'
+                text: app.rtl('الاسم')
             ReadonlyField:
-                text: root.full_name
+                text: app.rtl(root.full_name)
             SectionLabel:
-                text: 'العنوان'
+                text: app.rtl('العنوان')
             ReadonlyField:
-                text: root.address
+                text: app.rtl(root.address)
             SectionLabel:
-                text: 'الرقم القومي'
+                text: app.rtl('الرقم القومي')
             ReadonlyField:
                 text: root.national_id
             SectionLabel:
-                text: 'تاريخ الميلاد'
+                text: app.rtl('تاريخ الميلاد')
             ReadonlyField:
                 text: root.birth_date
             SectionLabel:
-                text: 'السن'
+                text: app.rtl('السن')
             ReadonlyField:
                 text: root.age_text
         Label:
-            text: root.status_message
+            text: app.rtl(root.status_message)
             font_name: app.font_path if app.font_exists else 'Roboto'
             text_size: self.width, None
             halign: 'right'
@@ -200,10 +203,10 @@ KV = r'''
             height: dp(48)
             spacing: dp(8)
             PrimaryButton:
-                text: 'إعادة التصوير'
+                text: app.rtl('إعادة التصوير')
                 on_release: app.root.current = 'menu'
             PrimaryButton:
-                text: 'حفظ'
+                text: app.rtl('حفظ')
                 on_release: root.save_record()
 
 <RecordsScreen>:
@@ -218,10 +221,10 @@ KV = r'''
             spacing: dp(8)
             PrimaryButton:
                 size_hint_x: .28
-                text: 'رجوع'
+                text: app.rtl('رجوع')
                 on_release: app.root.current = 'menu'
             Label:
-                text: 'آخر السجلات'
+                text: app.rtl('آخر السجلات')
                 font_name: app.font_path if app.font_exists else 'Roboto'
                 color: (.1,.1,.1,1)
         RecycleView:
@@ -247,10 +250,10 @@ KV = r'''
             spacing: dp(8)
             PrimaryButton:
                 size_hint_x: .28
-                text: 'رجوع'
+                text: app.rtl('رجوع')
                 on_release: app.root.current = 'search'
             Label:
-                text: 'تفاصيل السجل'
+                text: app.rtl('تفاصيل السجل')
                 font_name: app.font_path if app.font_exists else 'Roboto'
                 color: (.1,.1,.1,1)
         Image:
@@ -264,19 +267,19 @@ KV = r'''
             size_hint_y: None
             height: self.minimum_height
             SectionLabel:
-                text: 'الاسم'
+                text: app.rtl('الاسم')
             ReadonlyField:
-                text: root.full_name
+                text: app.rtl(root.full_name)
             SectionLabel:
-                text: 'العنوان'
+                text: app.rtl('العنوان')
             ReadonlyField:
-                text: root.address
+                text: app.rtl(root.address)
             SectionLabel:
-                text: 'الرقم القومي'
+                text: app.rtl('الرقم القومي')
             ReadonlyField:
                 text: root.national_id
             SectionLabel:
-                text: 'السن'
+                text: app.rtl('السن')
             ReadonlyField:
                 text: root.age_text
 
@@ -287,14 +290,14 @@ KV = r'''
         padding: dp(16)
         spacing: dp(10)
         Label:
-            text: 'تصدير ملف CSV'
+            text: app.rtl('تصدير ملف CSV')
             font_name: app.font_path if app.font_exists else 'Roboto'
             font_size: '22sp'
             size_hint_y: None
             height: dp(40)
             color: (.1,.1,.1,1)
         SectionLabel:
-            text: 'المسار الذي تحدده للحفظ (مثال: /storage/emulated/0/Download)'
+            text: app.rtl('المسار الذي تحدده للحفظ (مثال: /storage/emulated/0/Download)')
             size_hint_y: None
             height: dp(40)
         TextInput:
@@ -307,7 +310,7 @@ KV = r'''
             height: dp(42)
         Label:
             id: export_status
-            text: 'أدخل مسار المجلد ثم اضغط تصدير'
+            text: app.rtl('أدخل مسار المجلد ثم اضغط تصدير')
             font_name: app.font_path if app.font_exists else 'Roboto'
             text_size: self.width, None
             halign: 'right'
@@ -315,10 +318,10 @@ KV = r'''
             height: dp(48)
             color: (.2,.2,.2,1)
         PrimaryButton:
-            text: 'تصدير CSV'
+            text: app.rtl('تصدير CSV')
             on_release: root.do_export(export_path.text)
         PrimaryButton:
-            text: 'رجوع'
+            text: app.rtl('رجوع')
             on_release: app.root.current = 'menu'
         Widget:
 '''
@@ -327,35 +330,28 @@ class MainMenuScreen(Screen):
     status_message = StringProperty('')
 
     def on_pre_enter(self, *args):
-        self.status_message = f'المجلد الافتراضي للالتقاط: {get_default_capture_dir()}'
+        self.status_message = 'المجلد الافتراضي للالتقاط: ' + str(get_default_capture_dir())
 
     def capture_with_camera(self):
-        app = App.get_running_app()
-        app.show_text_popup(
-            title='مسار حفظ الصورة الجديدة',
-            label='اكتب مسار المجلد الذي تريد حفظ صورة البطاقة فيه.\nإذا تركته فارغًا، سيستخدم التطبيق المجلد الافتراضي.',
-            callback=app.start_camera_capture,
-            hint=str(get_default_capture_dir()),
-            initial=str(get_default_capture_dir()),
-        )
+        App.get_running_app().start_camera_capture('')
 
     def import_existing_image(self):
         app = App.get_running_app()
         app.show_text_popup(
-            title='إدخال صورة بطاقة',
-            label='أدخل مسار صورة البطاقة الموجودة.',
+            title=app.rtl('إدخال صورة بطاقة'),
+            label=app.rtl('أدخل مسار صورة البطاقة الموجودة.'),
             callback=app.process_image_path,
-            hint='مثال: /storage/emulated/0/Download/card.jpg',
+            hint='/storage/emulated/0/Download/card.jpg',
         )
 
 class SearchScreen(Screen):
     def do_search(self, query: str):
         app = App.get_running_app()
         results = app.db.search_by_name(query)
-        self.ids.status.text = 'الاسم غير موجود' if not results else f'تم العثور على {len(results)} نتيجة'
+        self.ids.status.text = app.rtl('الاسم غير موجود') if not results else app.rtl('تم العثور على ' + str(len(results)) + ' نتيجة')
         self.ids.rv.data = [
             {
-                'text': f"{r['full_name']}  |  {r['national_id']}",
+                'text': app.rtl(f"{r['full_name']}  |  {r['national_id']}"),
                 'font_name': app.font_path if app.font_exists else 'Roboto',
                 'on_release': (lambda rec=r: app.open_detail(rec))
             }
@@ -371,14 +367,15 @@ class ReviewScreen(Screen):
     age_text = StringProperty('')
     status_message = StringProperty('')
 
-    def set_data(self, image_path: str, result: OCRResult):
+    def set_data(self, image_path: str, result):
         self.image_path = image_path
-        self.full_name = result.full_name
-        self.address = result.address
-        self.national_id = result.national_id
-        self.birth_date = result.birth_date
-        self.age_text = str(result.age) if result.age is not None else ''
-        self.status_message = result.message
+        self.full_name = getattr(result, 'full_name', '')
+        self.address = getattr(result, 'address', '')
+        self.national_id = getattr(result, 'national_id', '')
+        self.birth_date = getattr(result, 'birth_date', '')
+        age = getattr(result, 'age', None)
+        self.age_text = str(age) if age is not None else ''
+        self.status_message = getattr(result, 'message', '')
 
     def save_record(self):
         app = App.get_running_app()
@@ -406,7 +403,7 @@ class RecordsScreen(Screen):
         records = app.db.list_recent(limit=50)
         self.ids.rv_records.data = [
             {
-                'text': f"{r['full_name']}  |  {r['national_id']}",
+                'text': app.rtl(f"{r['full_name']}  |  {r['national_id']}"),
                 'font_name': app.font_path if app.font_exists else 'Roboto',
                 'on_release': (lambda rec=r: app.open_detail(rec))
             }
@@ -432,9 +429,9 @@ class ExportScreen(Screen):
         app = App.get_running_app()
         try:
             csv_path = export_csv(app.db, folder_path)
-            self.ids.export_status.text = f'تم إنشاء الملف:\n{csv_path}'
+            self.ids.export_status.text = app.rtl('تم إنشاء الملف:\n' + str(csv_path))
         except Exception as exc:
-            self.ids.export_status.text = f'فشل التصدير: {exc}'
+            self.ids.export_status.text = app.rtl('فشل التصدير: ' + str(exc))
 
 class IDCheckScreenManager(ScreenManager):
     pass
@@ -458,32 +455,37 @@ class IDCheckApp(App):
         sm.add_widget(ExportScreen())
         return sm
 
+    def rtl(self, text: str) -> str:
+        return rtl_text(text)
+
     def start_camera_capture(self, folder_path: str):
-        folder_path = (folder_path or '').strip() or str(get_default_capture_dir())
-        self._pending_capture_folder = folder_path
+        self._pending_capture_folder = str(get_default_capture_dir())
         ensure_camera_permissions(self.on_permissions_ready, self.on_permissions_denied)
 
     def on_permissions_ready(self):
         folder_path = getattr(self, '_pending_capture_folder', str(get_default_capture_dir()))
-        try:
-            target_dir = Path(folder_path).expanduser()
-            target_dir.mkdir(parents=True, exist_ok=True)
-        except Exception:
-            target_dir = get_default_capture_dir()
-            target_dir.mkdir(parents=True, exist_ok=True)
-        filename = target_dir / f"id_check_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
-        self.root.get_screen('menu').status_message = f'جارٍ فتح الكاميرا...\nسيتم الحفظ في: {filename}'
-        take_picture(str(filename), self.on_picture_taken)
+        target_dir = Path(folder_path).expanduser()
+        target_dir.mkdir(parents=True, exist_ok=True)
+        filename = target_dir / ('id_check_' + datetime.now().strftime('%Y%m%d_%H%M%S') + '.jpg')
+        self.root.get_screen('menu').status_message = 'جارٍ فتح الكاميرا...\nسيتم الحفظ في: ' + str(filename)
+
+        def _open_camera(*_):
+            try:
+                take_picture(str(filename), self.on_picture_taken)
+            except Exception as exc:
+                self.root.get_screen('menu').status_message = 'فشل فتح الكاميرا: ' + str(exc)
+
+        Clock.schedule_once(_open_camera, 0.2)
 
     def on_permissions_denied(self):
         self.root.get_screen('menu').status_message = 'تم رفض صلاحية الكاميرا. لا يمكن المتابعة بدونها.'
 
-    def on_picture_taken(self, image_path: str | None):
+    def on_picture_taken(self, image_path):
         if not image_path:
             self.root.get_screen('menu').status_message = 'لم يتم التقاط صورة أو تم إلغاء العملية.'
             return False
-        self.root.get_screen('menu').status_message = f'تم التقاط الصورة: {image_path}'
-        self.process_image_path(image_path)
+        self.root.get_screen('menu').status_message = 'تم التقاط الصورة: ' + str(image_path)
+        self.process_image_path(str(image_path))
         return False
 
     def process_image_path(self, image_path: str):
@@ -513,8 +515,8 @@ class IDCheckApp(App):
         if self.font_exists:
             lbl.font_name = self.font_path
         btns = BoxLayout(size_hint_y=None, height=dp(42), spacing=8)
-        ok = Button(text='متابعة')
-        cancel = Button(text='إلغاء')
+        ok = Button(text=self.rtl('متابعة'))
+        cancel = Button(text=self.rtl('إلغاء'))
         btns.add_widget(cancel)
         btns.add_widget(ok)
         content.add_widget(lbl)
