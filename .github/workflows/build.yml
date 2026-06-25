@@ -43,13 +43,7 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            git zip unzip openjdk-17-jdk python3-pip python3-virtualenv \
-            autoconf automake autopoint m4 \
-            libtool libtool-bin libltdl-dev \
-            pkg-config gettext \
-            zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6 \
-            cmake libffi-dev libssl-dev ccache
+          sudo apt-get install -y             git zip unzip openjdk-17-jdk python3-pip python3-virtualenv             autoconf automake autopoint m4             libtool libtool-bin libltdl-dev             pkg-config gettext             zlib1g-dev libncurses5-dev libncursesw5-dev libtinfo6             cmake libffi-dev libssl-dev ccache
 
       - name: Install Python build tools
         run: |
@@ -87,7 +81,7 @@ jobs:
           echo "===== bin ====="
           ls -lah bin || true
           echo "===== find apk/aab ====="
-          find . -type f $$ -name "*.apk" -o -name "*.aab" $$ | sort || true
+          find . -type f \( -name "*.apk" -o -name "*.aab" \) | sort || true
           echo "===== last 200 lines of buildozer.log ====="
           tail -n 200 buildozer.log || true
 
