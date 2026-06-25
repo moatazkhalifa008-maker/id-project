@@ -53,7 +53,10 @@ def take_picture(target_file: str, on_complete):
     target_path.parent.mkdir(parents=True, exist_ok=True)
 
     def _done(path):
-        normalized = path if path and os.path.exists(path) else None
+        try:
+            normalized = path if path and os.path.exists(path) else None
+        except Exception:
+            normalized = None
         return on_complete(normalized)
 
     camera.take_picture(filename=str(target_path), on_complete=_done)
